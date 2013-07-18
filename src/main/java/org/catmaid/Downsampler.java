@@ -49,6 +49,7 @@ public class Downsampler< T extends NumericType< T >, A extends NumericType< A >
 	final protected Converter< A, T > at;
 	final protected Converter< T, A > ta;
 	final protected long[] sizeMinusOne;
+	final protected double div;
 	
 	final static protected long[] sizeMinusOne( final Interval source )
 	{
@@ -97,6 +98,7 @@ public class Downsampler< T extends NumericType< T >, A extends NumericType< A >
 		this.ta = ta;
 		
 		sizeMinusOne = sizeMinusOne( source );
+		div = 1.0 / ( 1L << sizeMinusOne.length );
 	}
 	
 	public Downsampler(
@@ -182,6 +184,7 @@ public class Downsampler< T extends NumericType< T >, A extends NumericType< A >
 				ta.convert( c.next(), variable );
 				accumulator.add( variable );
 			}
+			accumulator.mul( div );
 			at.convert( accumulator, targetCursor.next() );
 		}
 	}
@@ -192,7 +195,7 @@ public class Downsampler< T extends NumericType< T >, A extends NumericType< A >
 		final long[] min = new long[ sizeMinusOne.length ];
 		final long[] max = new long[ sizeMinusOne.length ];
 		final ArrayList< RandomAccessibleInterval< T > > views = new ArrayList< RandomAccessibleInterval< T > >( 1 << sizeMinusOne.length );
-		final ArrayList< Cursor< T > > cursors = new ArrayList< Cursor< T > >( 1 << sizeMinusOne.length );
+		final ArrayList< Cursor< T > > cursors = new ArrayList< Cursor< T > >( views.size() );
 		
 		views.add( Views.interval( source, min, sizeMinusOne ) );
 		
