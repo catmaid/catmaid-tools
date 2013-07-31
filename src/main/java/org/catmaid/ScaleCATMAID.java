@@ -27,8 +27,8 @@ import javax.imageio.ImageIO;
 
 import net.imglib2.FinalInterval;
 import net.imglib2.Interval;
-import net.imglib2.converter.read.ARGBARGBDoubleConverter;
-import net.imglib2.converter.read.ARGBDoubleARGBConverter;
+import net.imglib2.converter.ARGBARGBDoubleConverter;
+import net.imglib2.converter.ARGBDoubleARGBConverter;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.IntArray;
