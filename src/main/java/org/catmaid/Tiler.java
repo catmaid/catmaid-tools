@@ -16,13 +16,9 @@
  */
 package org.catmaid;
 
-import interactive.remote.catmaid.CATMAIDRandomAccessibleInterval;
-
-import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
-import java.awt.image.PixelGrabber;
 import java.io.File;
 import java.io.IOException;
 
@@ -35,21 +31,13 @@ import javax.imageio.stream.FileImageOutputStream;
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.Interval;
-import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.RealRandomAccessible;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.IntArray;
-import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
-import net.imglib2.realtransform.RealViews;
-import net.imglib2.realtransform.Scale3D;
-import net.imglib2.type.numeric.ARGBDoubleType;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
-import render.volume.ARGBARGBDoubleConverter;
-import render.volume.ARGBDoubleARGBConverter;
 
 /**
  * 
@@ -59,50 +47,12 @@ import render.volume.ARGBDoubleARGBConverter;
 public class Tiler
 {
 	final static protected Toolkit toolkit = Toolkit.getDefaultToolkit();
-	
 	final protected RandomAccessibleInterval< ARGBType > source;
+	
 	
 	public Tiler( final RandomAccessibleInterval< ARGBType > source )
 	{
 		this.source = source;
-	}
-	
-	static public Tiler fromCATMAID(
-			final String baseUrl,
-			final long width,
-			final long height,
-			final long depth,
-			final long s,
-			final int tileWidth,
-			final int tileHeight,
-			final double resXY,
-			final double resZ )
-	{
-		final CATMAIDRandomAccessibleInterval catmaidStack =
-				new CATMAIDRandomAccessibleInterval(
-						baseUrl,
-						width,
-						height,
-						depth,
-						s,
-						tileWidth,
-						tileHeight );
-
-		/* scale and re-raster */
-		final double scale = 1.0 / Math.pow( 2.0, s );
-		final Scale3D scale3d = new Scale3D( 1, 1, resZ / resXY * scale );
-		final RealRandomAccessible< ARGBType > interpolant =
-				Views.interpolate( catmaidStack, new NearestNeighborInterpolatorFactory< ARGBType >() );
-		final RandomAccessible< ARGBType > scaledInterpolant = RealViews.affine( interpolant, scale3d );
-		final RandomAccessibleInterval< ARGBType > scaled =
-				Views.interval(
-						scaledInterpolant,
-						new FinalInterval(
-								( long )( scale * width ),
-								( long )( scale * height ),
-								( long )( scale * depth * resZ / resXY ) ) );
-		
-		return new Tiler( scaled );
 	}
 	
 	
@@ -255,8 +205,8 @@ public class Tiler
 	 * @param maxC the last tile-column at scale-level 0 to be exported
 	 * @param exportPath base path for export
 	 * @param tilePattern the file name convention for tile coordinates without
-	 * 			extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 			"&lt;r&gt;", "&lt;c&gt;".
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
 	 * @param format
 	 * @param quality
 	 * @param type
@@ -348,8 +298,9 @@ public class Tiler
 	
 	
 	/**
-	 * Generate a CATMAID tile stack of the source
-	 * {@link RandomAccessibleInterval}.
+	 * Generate a CATMAID tile stack of an {@link Interval} of the source
+	 * {@link RandomAccessibleInterval}.  That is you can choose the
+	 * window to be exported.
 	 * 
 	 * @param sourceInterval the interval of the source to be exported 
 	 * @param orientation the export orientation
@@ -357,8 +308,8 @@ public class Tiler
 	 * @param tileHeight
 	 * @param exportPath base path for export
 	 * @param tilePattern the file name convention for tile coordinates without
-	 * 			extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 			"&lt;r&gt;", "&lt;c&gt;".
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
 	 * @param format
 	 * @param quality
 	 * @param type
@@ -397,9 +348,9 @@ public class Tiler
 			maxZ = sourceInterval.dimension( 2 ) - 1;
 		}
 		
-		System.out.println( "maxZ:" + maxZ );
-		System.out.println( "maxR:" + maxR );
-		System.out.println( "maxC:" + maxC );
+//		System.out.println( "maxZ:" + maxZ );
+//		System.out.println( "maxR:" + maxR );
+//		System.out.println( "maxC:" + maxC );
 		
 		tile(
 				sourceInterval,
@@ -429,8 +380,8 @@ public class Tiler
 	 * @param tileHeight
 	 * @param exportPath base path for export
 	 * @param tilePattern the file name convention for tile coordinates without
-	 * 			extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 			"&lt;r&gt;", "&lt;c&gt;".
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
 	 * @param format
 	 * @param quality
 	 * @param type
@@ -460,9 +411,8 @@ public class Tiler
 	
 	
 	/**
-	 * Generate a subset of a CATMAID tile stack of an {@link Interval} of the
-	 * source {@link RandomAccessibleInterval}.  That is you can choose the
-	 * window to be exported, and export only a subset thereof.
+	 * Generate a subset of a CATMAID tile stack of the source
+	 * {@link RandomAccessibleInterval}.
 	 * 
 	 * @param orientation the export orientation
 	 * @param tileWidth
@@ -475,11 +425,12 @@ public class Tiler
 	 * @param maxC the last tile-column at scale-level 0 to be exported
 	 * @param exportPath base path for export
 	 * @param tilePattern the file name convention for tile coordinates without
-	 * 			extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 			"&lt;r&gt;", "&lt;c&gt;".
-	 * @param format
-	 * @param quality
-	 * @param type
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
+	 * @param format file format, e.g. "jpg" or "png"
+	 * @param quality quality for jpg-compression if format is "jpg"
+	 * @param type the type of export tiles, e.g.
+	 * 		{@link BufferedImage#TYPE_BYTE_GRAY}
 	 * @throws IOException
 	 */
 	public void tile(
@@ -514,323 +465,5 @@ public class Tiler
 				format,
 				quality,
 				type );
-	}
-	
-	
-	final static protected BufferedImage open(
-			final String path,
-			final BufferedImage alternative,
-			final int type )
-	{
-		System.out.println( path );
-		final File file = new File( path );
-		if ( file.exists() )
-		{
-//			final Image tImg = toolkit.createImage( path );
-			try
-			{
-				return ImageIO.read( new File( path ) );
-			}
-			catch ( final IOException e )
-			{
-				return alternative;
-			}
-		}
-		else
-			return alternative;
-	}
-	
-	
-	final public static void scale(
-			final Interval sourceInterval,
-			final Orientation orientation,
-			final int tileWidth,
-			final int tileHeight,
-			final long minZ,
-			final long maxZ,
-			final String dirPath,
-			final String tilePattern,
-			final String format,
-			final float quality,
-			final int type ) throws Exception
-	{
-		final BufferedImage alternative = new BufferedImage( tileWidth, tileHeight, BufferedImage.TYPE_INT_RGB );
-		
-		final int[] targetPixels = new int[ tileWidth * tileHeight ];
-		final ArrayImg< ARGBType, IntArray > targetTile = ArrayImgs.argbs( targetPixels, tileWidth, tileHeight );
-		final BufferedImage target = new BufferedImage( tileWidth, tileHeight, BufferedImage.TYPE_INT_RGB );
-		
-		final BufferedImage sourceImage = new BufferedImage( tileWidth * 2, tileHeight * 2, BufferedImage.TYPE_INT_RGB );
-		final Graphics2D g = sourceImage.createGraphics();
-		final int[] sourcePixels = new int[ tileWidth * tileHeight * 4 ];
-		final ArrayImg< ARGBType, IntArray > sourceTile = ArrayImgs.argbs( sourcePixels, tileWidth * 2, tileHeight * 2 );
-//		
-		final Downsampler< ARGBType, ARGBDoubleType > downsampler =
-				new Downsampler< ARGBType, ARGBDoubleType >(
-						sourceTile,
-						targetTile,
-						new ARGBDoubleType(),
-						new ARGBDoubleARGBConverter< ARGBDoubleType >(),
-						new ARGBARGBDoubleConverter< ARGBDoubleType >() );
-		
-//		final Downsampler< ARGBType, ARGBType > downsampler =
-//				Downsampler.create(
-//						sourceTile,
-//						targetTile );
-		
-		/* orientation */
-		final Interval viewInterval;
-		switch ( orientation )
-		{
-		case XZ:
-			viewInterval = new FinalInterval(
-					new long[]{ sourceInterval.min( 0 ), sourceInterval.min( 2 ), sourceInterval.min( 1 ) },
-					new long[]{ sourceInterval.max( 0 ), sourceInterval.max( 2 ), sourceInterval.max( 1 ) } );
-			break;
-		case ZY:
-			viewInterval = new FinalInterval(
-					new long[]{ sourceInterval.min( 2 ), sourceInterval.min( 1 ), sourceInterval.min( 0 ) },
-					new long[]{ sourceInterval.max( 2 ), sourceInterval.max( 1 ), sourceInterval.max( 0 ) } );
-			break;
-		default:
-			viewInterval = sourceInterval;
-		}
-		
-		/* scale */
-		for ( long l = minZ; l <= maxZ; ++l )
-		{
-			System.out.println( "z-index: " +  l );
-			for (
-				long w1 = ( long )Math.ceil( viewInterval.dimension( 0 ) * 0.5 ),
-				h1 = ( long )Math.ceil( viewInterval.dimension( 1 ) * 0.5 ),
-				s = 1;
-				w1 > tileWidth && h1 > tileHeight;
-				w1 = ( long )Math.ceil( w1 * 0.5 ),
-				h1 = ( long )Math.ceil( h1 * 0.5 ),
-				++s )
-			{
-				for ( long y = 0; y < h1; y += tileHeight )
-				{
-					final long yt = y / tileHeight;
-					for ( long x = 0; x < w1; x += tileWidth )
-					{
-						final long xt = x / tileWidth;
-						final Image imp1 = open(
-								new StringBuffer( dirPath ).
-									append( "/" ).
-									append( tileName( tilePattern, s - 1, l, 2 * yt, 2 * xt ) ).
-									append( "." ).
-									append( format ).
-									toString(),
-								alternative,
-								type );
-						final Image imp2 = open(
-								new StringBuffer( dirPath ).
-									append( "/" ).
-									append( tileName( tilePattern, s - 1, l, 2 * yt, 2 * xt + 1 ) ).
-									append( "." ).
-									append( format ).
-									toString(),
-								alternative,
-								type );
-						final Image imp3 = open(
-								new StringBuffer( dirPath ).
-									append( "/" ).
-									append( tileName( tilePattern, s - 1, l, 2 * yt + 1, 2 * xt ) ).
-									append( "." ).
-									append( format ).
-									toString(),
-								alternative,
-								type );
-						final Image imp4 = open(
-								new StringBuffer( dirPath ).
-									append( "/" ).
-									append( tileName( tilePattern, s - 1, l, 2 * yt + 1, 2 * xt + 1 ) ).
-									append( "." ).
-									append( format ).
-									toString(),
-								alternative,
-								type );
-						
-						g.drawImage( imp1, 0, 0, null );
-						g.drawImage( imp2, tileWidth, 0, null );
-						g.drawImage( imp3, 0, tileHeight, null );
-						g.drawImage( imp4, tileWidth, tileHeight, null );
-						
-						final PixelGrabber pg = new PixelGrabber( sourceImage, 0, 0, tileWidth * 2, tileHeight * 2, sourcePixels, 0, tileWidth * 2 );
-						pg.grabPixels();
-						
-						downsampler.call();
-						
-						target.getRaster().setDataElements( 0, 0, tileWidth, tileHeight, targetPixels );
-						final BufferedImage targetCopy = draw( target, type );
-
-						writeTile(
-								targetCopy,
-								new StringBuffer( dirPath ).
-								append( "/" ).
-								append( tileName( tilePattern, s, l, yt, xt ) ).
-								toString(),
-								format,
-								quality );
-						
-//						fileSaver = new FileSaver(impTile);
-//						fileSaver.setJpegQuality(jpegQuality);
-//						fileSaver.saveAsJpeg(dirPath + yt + "_" + xt + "_" + s + ".jpg");
-					}
-				}
-			}
-		}
-	}
-	
-	final public static void scale(
-			final Interval sourceInterval,
-			final Orientation orientation,
-			final int tileWidth,
-			final int tileHeight,
-			final String dirPath,
-			final String tilePattern,
-			final String format,
-			final float quality,
-			final int type ) throws Exception
-	{
-		scale(
-				sourceInterval,
-				orientation,
-				tileWidth,
-				tileHeight,
-				sourceInterval.min( 2 ),
-				sourceInterval.max( 2 ),
-				dirPath,
-				tilePattern,
-				format,
-				quality,
-				type );
-	}
-
-	final static public void main( final String[] args ) throws Exception
-	{
-//		Tiler.fromCATMAID(
-//				"http://incf.ini.uzh.ch/image-stack-fib/",
-//				2048,
-//				1536,
-//				460,
-//				0,
-//				256,
-//				256,
-//				5,
-//				15 ).tile(
-//					new FinalInterval(
-//							460 * 15 / 5,
-//							1536,
-//							2048 ),
-//					Orientation.ZY,
-//					256,
-//					256,
-//					"/home/saalfeld/tmp/catmaid/export-test/fib/zy",
-//					0.85f );
-		
-//		Tiler.fromCATMAID(
-//				"file:/home/saalfeld/tmp/catmaid/export-test/fib/aligned/xy/",
-//				1987,
-//				1441,
-//				460,
-//				0,
-//				256,
-//				256,
-//				5.6,
-//				11.2 ).tile(
-//					new FinalInterval(
-//							1987,
-//							1441,
-//							460 * 2 ),
-//					Orientation.XZ,
-//					256,
-//					256,
-//					"/home/saalfeld/tmp/catmaid/export-test/fib/aligned/xz",
-//					"<z>/<r>_<c>_<s>",
-//					"jpg",
-//					0.85f,
-//					BufferedImage.TYPE_BYTE_GRAY );
-		
-//		new ImageJ();
-		
-//		Tiler.fromCATMAID(
-//				"file:/home/saalfeld/tmp/catmaid/export-test/fib/aligned/xy/",
-//				1987,
-//				1441,
-//				460,
-//				0,
-//				256,
-//				256,
-//				5.6,
-//				11.2 ).tile(
-//						new FinalInterval(
-//								new long[]{ 40, 0, 0 },
-//								new long[]{ 42, 1440, 459 } ),
-//					Orientation.ZY,
-//					256,
-//					256,
-//					"/home/saalfeld/tmp/catmaid/export-test/fib/aligned/zy",
-//					"<z>/<r>_<c>_<s>",
-////					"<s>/<z>/<r>/<c>",
-//					"jpg",
-//					0.85f,
-//					BufferedImage.TYPE_BYTE_GRAY );
-//		
-//		Tiler.scale(
-//				new FinalInterval(
-//						1987 / 2,
-//						1441 / 2,
-//						460 * 2 / 2 ),
-//				Orientation.ZY,
-//				256,
-//				256,
-//				40,
-//				42,
-//				"/home/saalfeld/tmp/catmaid/export-test/fib/aligned/zy",
-//				"<z>/<r>_<c>_<s>",
-//				"jpg",
-//				0.85f,
-//				BufferedImage.TYPE_BYTE_GRAY );
-		
-		Tiler.fromCATMAID(
-				"http://braingraph1dev.cs.jhu.edu/view/bock11/",
-				135200,
-				119600,
-				1233,
-				0,
-				256,
-				256,
-				3,
-				3 /* 30 */ ).tile(
-						new FinalInterval(
-								new long[]{ 64000, 54000, 100 },
-								new long[]{ 68000, 58000, 500 } ),
-					Orientation.XY,
-					256,
-					256,
-					"/home/saalfeld/tmp/catmaid/export-test/bock/xy",
-					"<z>/<r>_<c>_<s>",
-//					"<s>/<z>/<r>/<c>",
-					"jpg",
-					0.85f,
-					BufferedImage.TYPE_BYTE_GRAY );
-		
-		Tiler.scale(
-				new FinalInterval(
-						4000,
-						4000,
-						400 ),
-				Orientation.XY,
-				256,
-				256,
-				40,
-				42,
-				"/home/saalfeld/tmp/catmaid/export-test/bock/xy",
-				"<z>/<r>_<c>_<s>",
-				"jpg",
-				0.85f,
-				BufferedImage.TYPE_BYTE_GRAY );
 	}
 }
