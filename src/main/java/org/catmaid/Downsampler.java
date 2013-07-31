@@ -16,8 +16,6 @@
  */
 package org.catmaid;
 
-import ij.ImageJ;
-
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
@@ -28,11 +26,7 @@ import net.imglib2.converter.Converter;
 import net.imglib2.converter.TypeIdentity;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
-import net.imglib2.img.array.ArrayImgFactory;
-import net.imglib2.img.display.imagej.ImageJFunctions;
-import net.imglib2.io.ImgOpener;
 import net.imglib2.type.numeric.NumericType;
-import net.imglib2.type.numeric.real.FloatType;
 import net.imglib2.view.SubsampleIntervalView;
 import net.imglib2.view.Views;
 
@@ -226,21 +220,5 @@ public class Downsampler< T extends NumericType< T >, A extends NumericType< A >
 		average( cursors );
 		
 		return target;
-	}
-	
-	final static public void main( final String[] args ) throws Exception
-	{
-		new ImageJ();
-		
-		final String filename = "src/main/resources/preikestolen.tif";
-//		final ImgPlus< FloatType > img = new ImgOpener().openImg( filename, new ArrayImgFactory< FloatType >(), new FloatType() );
-		
-		RandomAccessibleInterval< FloatType > img = new ImgOpener().openImg( filename, new ArrayImgFactory< FloatType >(), new FloatType() );
-		while ( img.dimension( 0 ) > 1 )
-		{
-			ImageJFunctions.show( img );
-			final Downsampler< FloatType, FloatType > downsampler = Downsampler.create( img, ( ( Img< FloatType > )img ).factory() );
-			img = downsampler.call();
-		}
 	}
 }

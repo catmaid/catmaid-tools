@@ -17,7 +17,6 @@
 package org.catmaid;
 
 import java.awt.Image;
-import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +45,7 @@ import net.imglib2.view.Views;
  */
 public class Tiler
 {
-	final static protected Toolkit toolkit = Toolkit.getDefaultToolkit();
+//	final static protected Toolkit toolkit = Toolkit.getDefaultToolkit();
 	final protected RandomAccessibleInterval< ARGBType > source;
 	
 	
