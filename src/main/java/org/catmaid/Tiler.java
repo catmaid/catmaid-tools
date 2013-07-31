@@ -255,8 +255,8 @@ public class Tiler
 	 * @param maxC the last tile-column at scale-level 0 to be exported
 	 * @param exportPath base path for export
 	 * @param tilePattern the file name convention for tile coordinates without
-	 * 			extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 			"&lt;r&gt;", "&lt;c&gt;".
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
 	 * @param format
 	 * @param quality
 	 * @param type
@@ -348,8 +348,9 @@ public class Tiler
 	
 	
 	/**
-	 * Generate a CATMAID tile stack of the source
-	 * {@link RandomAccessibleInterval}.
+	 * Generate a CATMAID tile stack of an {@link Interval} of the source
+	 * {@link RandomAccessibleInterval}.  That is you can choose the
+	 * window to be exported.
 	 * 
 	 * @param sourceInterval the interval of the source to be exported 
 	 * @param orientation the export orientation
@@ -357,8 +358,8 @@ public class Tiler
 	 * @param tileHeight
 	 * @param exportPath base path for export
 	 * @param tilePattern the file name convention for tile coordinates without
-	 * 			extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 			"&lt;r&gt;", "&lt;c&gt;".
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
 	 * @param format
 	 * @param quality
 	 * @param type
@@ -429,8 +430,8 @@ public class Tiler
 	 * @param tileHeight
 	 * @param exportPath base path for export
 	 * @param tilePattern the file name convention for tile coordinates without
-	 * 			extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 			"&lt;r&gt;", "&lt;c&gt;".
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
 	 * @param format
 	 * @param quality
 	 * @param type
@@ -460,9 +461,8 @@ public class Tiler
 	
 	
 	/**
-	 * Generate a subset of a CATMAID tile stack of an {@link Interval} of the
-	 * source {@link RandomAccessibleInterval}.  That is you can choose the
-	 * window to be exported, and export only a subset thereof.
+	 * Generate a subset of a CATMAID tile stack of the source
+	 * {@link RandomAccessibleInterval}.
 	 * 
 	 * @param orientation the export orientation
 	 * @param tileWidth
@@ -475,11 +475,12 @@ public class Tiler
 	 * @param maxC the last tile-column at scale-level 0 to be exported
 	 * @param exportPath base path for export
 	 * @param tilePattern the file name convention for tile coordinates without
-	 * 			extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 			"&lt;r&gt;", "&lt;c&gt;".
-	 * @param format
-	 * @param quality
-	 * @param type
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
+	 * @param format file format, e.g. "jpg" or "png"
+	 * @param quality quality for jpg-compression if format is "jpg"
+	 * @param type the type of export tiles, e.g.
+	 * 		{@link BufferedImage#TYPE_BYTE_GRAY}
 	 * @throws IOException
 	 */
 	public void tile(
@@ -541,6 +542,30 @@ public class Tiler
 	}
 	
 	
+	/**
+	 * Generate scaled tiles from a range of an existing scale level 0 tile
+	 * stack.
+	 * 
+	 * @param sourceInterval the dimensions of the level 0 tile stack in
+	 * 		original x,y,z orientation 
+	 * @param orientation the orientation of the level 0 tile stack, required
+	 * 		to transpose sourceInterval accordingly
+	 * @param tileWidth
+	 * @param tileHeight
+	 * @param minZ the first z-index to be scaled 
+	 * @param maxZ the last z-index to be scaled
+	 * @param dirPath base path of the source, this is also where the scaled
+	 * 		tiles will be exported
+	 * @param tilePattern the file name convention for tile coordinates without
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
+	 * @param format file format, e.g. "jpg" or "png"
+	 * @param quality quality for jpg-compression if format is "jpg"
+	 * @param type the type of export tiles, e.g.
+	 * 		{@link BufferedImage#TYPE_BYTE_GRAY}
+	 * 
+	 * @throws Exception
+	 */
 	final public static void scale(
 			final Interval sourceInterval,
 			final Orientation orientation,
@@ -564,7 +589,7 @@ public class Tiler
 		final Graphics2D g = sourceImage.createGraphics();
 		final int[] sourcePixels = new int[ tileWidth * tileHeight * 4 ];
 		final ArrayImg< ARGBType, IntArray > sourceTile = ArrayImgs.argbs( sourcePixels, tileWidth * 2, tileHeight * 2 );
-//		
+
 		final Downsampler< ARGBType, ARGBDoubleType > downsampler =
 				new Downsampler< ARGBType, ARGBDoubleType >(
 						sourceTile,
@@ -572,12 +597,7 @@ public class Tiler
 						new ARGBDoubleType(),
 						new ARGBDoubleARGBConverter< ARGBDoubleType >(),
 						new ARGBARGBDoubleConverter< ARGBDoubleType >() );
-		
-//		final Downsampler< ARGBType, ARGBType > downsampler =
-//				Downsampler.create(
-//						sourceTile,
-//						targetTile );
-		
+				
 		/* orientation */
 		final Interval viewInterval;
 		switch ( orientation )
@@ -673,16 +693,35 @@ public class Tiler
 								toString(),
 								format,
 								quality );
-						
-//						fileSaver = new FileSaver(impTile);
-//						fileSaver.setJpegQuality(jpegQuality);
-//						fileSaver.saveAsJpeg(dirPath + yt + "_" + xt + "_" + s + ".jpg");
 					}
 				}
 			}
 		}
 	}
 	
+	
+	
+	/**
+	 * Generate scaled tiles from an existing scale level 0 tile stack.
+	 * 
+	 * @param sourceInterval the dimensions of the level 0 tile stack in
+	 * 		original x,y,z orientation 
+	 * @param orientation the orientation of the level 0 tile stack, required
+	 * 		to transpose sourceInterval accordingly
+	 * @param tileWidth
+	 * @param tileHeight
+	 * @param dirPath base path of the source, this is also where the scaled
+	 * 		tiles will be exported
+	 * @param tilePattern the file name convention for tile coordinates without
+	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
+	 * 		"&lt;r&gt;", "&lt;c&gt;".
+	 * @param format file format, e.g. "jpg" or "png"
+	 * @param quality quality for jpg-compression if format is "jpg"
+	 * @param type the type of export tiles, e.g.
+	 * 		{@link BufferedImage#TYPE_BYTE_GRAY}
+	 * 
+	 * @throws Exception
+	 */
 	final public static void scale(
 			final Interval sourceInterval,
 			final Orientation orientation,
@@ -707,7 +746,8 @@ public class Tiler
 				quality,
 				type );
 	}
-
+	
+	
 	final static public void main( final String[] args ) throws Exception
 	{
 //		Tiler.fromCATMAID(
@@ -794,43 +834,94 @@ public class Tiler
 //				0.85f,
 //				BufferedImage.TYPE_BYTE_GRAY );
 		
-		Tiler.fromCATMAID(
-				"http://braingraph1dev.cs.jhu.edu/view/bock11/",
-				135200,
-				119600,
-				1233,
-				0,
-				256,
-				256,
-				3,
-				3 /* 30 */ ).tile(
-						new FinalInterval(
-								new long[]{ 64000, 54000, 100 },
-								new long[]{ 68000, 58000, 500 } ),
-					Orientation.XY,
-					256,
-					256,
-					"/home/saalfeld/tmp/catmaid/export-test/bock/xy",
-					"<z>/<r>_<c>_<s>",
-//					"<s>/<z>/<r>/<c>",
-					"jpg",
-					0.85f,
-					BufferedImage.TYPE_BYTE_GRAY );
+//		Tiler.fromCATMAID(
+//				"http://braingraph1dev.cs.jhu.edu/view/bock11/",
+//				135200,
+//				119600,
+//				1233,
+//				0,
+//				256,
+//				256,
+//				5,
+//				5 /* 30 */ ).tile(
+//						new FinalInterval(
+//								new long[]{ 64000, 54000, 100 },
+//								new long[]{ 68000, 58000, 500 } ),
+//					Orientation.XY,
+//					256,
+//					256,
+//					340,
+//					399,
+//					0,
+//					15,
+//					0,
+//					15,
+//					"/home/saalfeld/tmp/catmaid/export-test/bock/xy",
+//					"<z>/<r>_<c>_<s>",
+////					"<s>/<z>/<r>/<c>",
+//					"jpg",
+//					0.85f,
+//					BufferedImage.TYPE_BYTE_GRAY );
+
+//		Tiler.fromCATMAID(
+//		"file:/home/saalfeld/tmp/catmaid/export-test/bock/xy/",
+//		4000,
+//		4000,
+//		400,
+//		1,
+//		256,
+//		256,
+//		5,
+//		50 ).tile(
+//				new FinalInterval(
+//						new long[]{ 0, 0, 0 },
+//						new long[]{ 1999, 1999, 1997 } ),
+//			Orientation.ZY,
+//			256,
+//			256,
+//			0,
+//			1999,
+//			0,
+//			7,
+//			0,
+//			7,
+//			"/home/saalfeld/tmp/catmaid/export-test/bock/zy",
+//			"<z>/<r>_<c>_<s>",
+////			"<s>/<z>/<r>/<c>",
+//			"jpg",
+//			0.85f,
+//			BufferedImage.TYPE_BYTE_GRAY );
 		
-		Tiler.scale(
-				new FinalInterval(
-						4000,
-						4000,
-						400 ),
-				Orientation.XY,
-				256,
-				256,
-				40,
-				42,
-				"/home/saalfeld/tmp/catmaid/export-test/bock/xy",
-				"<z>/<r>_<c>_<s>",
-				"jpg",
-				0.85f,
-				BufferedImage.TYPE_BYTE_GRAY );
+//		Tiler.scale(
+//				new FinalInterval(
+//						4000,
+//						4000,
+//						400 ),
+//				Orientation.XY,
+//				256,
+//				256,
+//				0,
+//				399,
+//				"/home/saalfeld/tmp/catmaid/export-test/bock/xy",
+//				"<z>/<r>_<c>_<s>",
+//				"jpg",
+//				0.85f,
+//				BufferedImage.TYPE_BYTE_GRAY );
+	
+	Tiler.scale(
+			new FinalInterval(
+					1999,
+					1999,
+					1997 ),
+			Orientation.ZY,
+			256,
+			256,
+			0,
+			1999,
+			"/home/saalfeld/tmp/catmaid/export-test/bock/zy",
+			"<z>/<r>_<c>_<s>",
+			"jpg",
+			0.85f,
+			BufferedImage.TYPE_BYTE_GRAY );
 	}
 }
