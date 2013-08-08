@@ -27,6 +27,8 @@ import javax.imageio.ImageIO;
 
 import net.imglib2.FinalInterval;
 import net.imglib2.Interval;
+import net.imglib2.converter.ARGBARGBDoubleConverter;
+import net.imglib2.converter.ARGBDoubleARGBConverter;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.IntArray;
@@ -34,9 +36,6 @@ import net.imglib2.type.numeric.ARGBDoubleType;
 import net.imglib2.type.numeric.ARGBType;
 
 import org.catmaid.Tiler.Orientation;
-
-import render.volume.ARGBARGBDoubleConverter;
-import render.volume.ARGBDoubleARGBConverter;
 
 /**
  * <p>A standalone command line application to generate the scale pyramid of an
