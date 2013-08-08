@@ -16,8 +16,6 @@
  */
 package org.catmaid;
 
-import interactive.remote.catmaid.CATMAIDRandomAccessibleInterval;
-
 import java.awt.image.BufferedImage;
 
 import net.imglib2.FinalInterval;
