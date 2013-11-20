@@ -1,0 +1,11 @@
+#!/bin/bash
+
+INSTALL_PATH="/home/saalfeld/workspace/catmaid-tools"
+IFS="="
+PARAMS=""
+while read -r key value
+do
+        PARAMS="$PARAMS -D$key=$value"
+done < $1
+eval "java$PARAMS -jar $INSTALL_PATH/catmaid-tile.jar"
+#java$PARAMS -jar $INSTALL_PATH/catmaid-tile.jar

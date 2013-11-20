@@ -87,6 +87,7 @@ import org.catmaid.Tiler.Orientation;
  * </dl>
  * <p>Parameters are passed as properties to the JVM virtual machine, e.g.
  * <code>./java -jar ScaleCATMAID.jar</code></p>
+ * 
  * @author Stephan Saalfeld <saalfeld@mpi-cbg.de>
  */
 public class ScaleCATMAID
