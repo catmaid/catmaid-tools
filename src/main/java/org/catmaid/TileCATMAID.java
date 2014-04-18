@@ -23,6 +23,7 @@ import net.imglib2.Interval;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealRandomAccessible;
+import net.imglib2.interpolation.randomaccess.NLinearInterpolatorARGBFactory;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
 import net.imglib2.realtransform.RealViews;
 import net.imglib2.realtransform.Scale3D;
@@ -136,6 +137,8 @@ import org.catmaid.Tiler.Orientation;
  */
 public class TileCATMAID
 {
+	static public enum Interpolation { NN, NL };
+	
 	static protected class Param
 	{
 		/* CATMAID source stack, representing an xyz-orientation */
@@ -166,6 +169,7 @@ public class TileCATMAID
 		public String format;
 		public float quality;
 		public int type;
+		public TileCATMAID.Interpolation interpolation;
 	}
 	
 	static protected Param parseParameters()
@@ -244,6 +248,12 @@ public class TileCATMAID
 		else
 			p.type = BufferedImage.TYPE_INT_RGB;
 		
+		final String interpolation = System.getProperty( "interpolation", "NN" );
+		if ( interpolation.equalsIgnoreCase( "nl" ) || interpolation.equalsIgnoreCase( "NL" ) )
+			p.interpolation = Interpolation.NL;
+		else
+			p.interpolation = Interpolation.NN;
+		
 		return p;
 	}
 	
@@ -276,7 +286,8 @@ public class TileCATMAID
 			final int tileWidth,
 			final int tileHeight,
 			final double resXY,
-			final double resZ )
+			final double resZ,
+			final Interpolation interpolation )
 	{
 		final CATMAIDRandomAccessibleInterval catmaidStack =
 				new CATMAIDRandomAccessibleInterval(
@@ -291,8 +302,15 @@ public class TileCATMAID
 		/* scale and re-raster */
 		final double scale = 1.0 / ( 1 << s );
 		final Scale3D scale3d = new Scale3D( 1, 1, resZ / resXY * scale );
-		final RealRandomAccessible< ARGBType > interpolant =
-				Views.interpolate( catmaidStack, new NearestNeighborInterpolatorFactory< ARGBType >() );
+		final RealRandomAccessible< ARGBType > interpolant;
+		switch ( interpolation )
+		{
+		case NL:
+			interpolant = Views.interpolate( catmaidStack, new NLinearInterpolatorARGBFactory() );
+			break;
+		default:
+			interpolant = Views.interpolate( catmaidStack, new NearestNeighborInterpolatorFactory< ARGBType >() );
+		}
 		final RandomAccessible< ARGBType > scaledInterpolant = RealViews.affine( interpolant, scale3d );
 		final RandomAccessibleInterval< ARGBType > scaled =
 				Views.interval(
