@@ -34,6 +34,7 @@ import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.IntArray;
+import net.imglib2.type.Type;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.util.Intervals;
 import net.imglib2.view.Views;
@@ -69,12 +70,12 @@ public class Tiler
 	 * @param sourceTile
 	 * @param targetTile
 	 */
-	final static protected void copyTile(
-			final RandomAccessibleInterval< ARGBType > sourceTile,
-			final RandomAccessibleInterval< ARGBType > targetTile )
+	final static protected < T extends Type< T > > void copyTile(
+			final RandomAccessibleInterval< T > sourceTile,
+			final RandomAccessibleInterval< T > targetTile )
 	{
-		final Cursor< ARGBType > src = Views.flatIterable( sourceTile ).cursor();
-		final Cursor< ARGBType > dst = Views.flatIterable( targetTile ).cursor();
+		final Cursor< T > src = Views.flatIterable( sourceTile ).cursor();
+		final Cursor< T > dst = Views.flatIterable( targetTile ).cursor();
 
 		while ( src.hasNext() )
 			dst.next().set( src.next() );
