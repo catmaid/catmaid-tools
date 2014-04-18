@@ -27,6 +27,7 @@ import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory
 import net.imglib2.realtransform.RealViews;
 import net.imglib2.realtransform.Scale3D;
 import net.imglib2.type.numeric.ARGBType;
+import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 
 import org.catmaid.Tiler.Orientation;
@@ -309,9 +310,7 @@ public class TileCATMAID
 	{
 		final Param p = parseParameters();
 		
-		System.out.println( "sourceBaseUrl: " + p.sourceBaseUrl );
-		System.out.println( "sourceWidth: " + p.sourceWidth );
-		System.out.println( "sourceHeight: " + p.sourceHeight );
+		System.out.println( "sourceInterval: " + Util.printInterval( p.sourceInterval ) );
 		
 //		fromCATMAID(
 //				p.sourceBaseUrl,
