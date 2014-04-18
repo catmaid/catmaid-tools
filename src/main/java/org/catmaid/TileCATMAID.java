@@ -178,6 +178,8 @@ public class TileCATMAID
 		p.sourceHeight = Long.parseLong( System.getProperty( "sourceHeight", "0" ) );
 		p.sourceDepth = Long.parseLong( System.getProperty( "sourceDepth", "0" ) );
 		p.sourceScaleLevel = Long.parseLong( System.getProperty( "sourceScaleLevel", "0" ) );
+		final int s = 1 << p.sourceScaleLevel;
+		
 		p.sourceTileWidth = Integer.parseInt( System.getProperty( "sourceTileWidth", "256" ) );
 		p.sourceTileHeight = Integer.parseInt( System.getProperty( "sourceTileHeight", "256" ) );
 		p.sourceResXY = Double.parseDouble( System.getProperty( "sourceResXY", "1.0" ) );
@@ -191,8 +193,8 @@ public class TileCATMAID
 		final long height = Long.parseLong( System.getProperty( "height", "0" ) );
 		final long depth = Long.parseLong( System.getProperty( "depth", "0" ) );
 		p.sourceInterval = new FinalInterval(
-				new long[]{ minX, minY, minZ },
-				new long[]{ minX + width - 1, minY + height - 1, minZ + depth - 1 } );
+				new long[]{ minX / s, minY / s, minZ },
+				new long[]{ ( minX + width ) / s - 1, ( minY + height ) / s - 1, minZ + depth - 1 } );
 		final FinalInterval orientedSourceInterval;
 		final String orientation = System.getProperty( "orientation", "xy" );
 		if ( orientation.equalsIgnoreCase( "xz" ) )
@@ -287,7 +289,7 @@ public class TileCATMAID
 						tileHeight );
 
 		/* scale and re-raster */
-		final double scale = 1.0 / Math.pow( 2.0, s );
+		final double scale = 1.0 / ( 1 << s );
 		final Scale3D scale3d = new Scale3D( 1, 1, resZ / resXY * scale );
 		final RealRandomAccessible< ARGBType > interpolant =
 				Views.interpolate( catmaidStack, new NearestNeighborInterpolatorFactory< ARGBType >() );
