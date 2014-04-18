@@ -332,30 +332,31 @@ public class TileCATMAID
 		
 		System.out.println( "sourceInterval: " + Util.printInterval( p.sourceInterval ) );
 		
-//		fromCATMAID(
-//				p.sourceBaseUrl,
-//				p.sourceWidth,
-//				p.sourceHeight,
-//				p.sourceDepth,
-//				p.sourceScaleLevel,
-//				p.sourceTileWidth,
-//				p.sourceTileHeight,
-//				p.sourceResXY,
-//				p.sourceResZ ).tile(
-//						p.sourceInterval,
-//						p.orientation,
-//						p.tileWidth,
-//						p.tileHeight,
-//						p.minZ,
-//						p.maxZ,
-//						p.minR,
-//						p.maxR,
-//						p.minC,
-//						p.maxC,
-//						p.exportPath,
-//						p.tilePattern,
-//						p.format,
-//						p.quality,
-//						p.type );
+		fromCATMAID(
+				p.sourceBaseUrl,
+				p.sourceWidth,
+				p.sourceHeight,
+				p.sourceDepth,
+				p.sourceScaleLevel,
+				p.sourceTileWidth,
+				p.sourceTileHeight,
+				p.sourceResXY,
+				p.sourceResZ,
+				p.interpolation ).tile(
+						p.sourceInterval,
+						p.orientation,
+						p.tileWidth,
+						p.tileHeight,
+						p.minZ,
+						p.maxZ,
+						p.minR,
+						p.maxR,
+						p.minC,
+						p.maxC,
+						p.exportPath,
+						p.tilePattern,
+						p.format,
+						p.quality,
+						p.type );
 	}
 }
