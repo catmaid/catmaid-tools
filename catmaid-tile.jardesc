@@ -12,8 +12,8 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
         <javaElement handleIdentifier="=catmaid-tools/src\/main\/java&lt;org.catmaid{Tiler.java"/>
-        <javaElement handleIdentifier="=imglib2/src\/main\/java"/>
         <javaElement handleIdentifier="=imglib2-realtransform/src\/main\/java"/>
+        <javaElement handleIdentifier="=imglib2/src\/main\/java"/>
         <javaElement handleIdentifier="=catmaid-tools/src\/main\/java&lt;org.catmaid{TileCATMAID.java"/>
         <javaElement handleIdentifier="=catmaid-tools/src\/main\/java&lt;org.catmaid{CATMAIDRandomAccessibleInterval.java"/>
     </selectedElements>

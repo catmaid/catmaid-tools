@@ -18,15 +18,18 @@ package org.catmaid;
 
 import java.awt.image.BufferedImage;
 
+import net.imglib2.FinalDimensions;
 import net.imglib2.FinalInterval;
 import net.imglib2.Interval;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.RealLocalizable;
+import net.imglib2.RealPoint;
 import net.imglib2.RealRandomAccessible;
 import net.imglib2.interpolation.randomaccess.NLinearInterpolatorARGBFactory;
 import net.imglib2.interpolation.randomaccess.NearestNeighborInterpolatorFactory;
+import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.realtransform.RealViews;
-import net.imglib2.realtransform.Scale3D;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.util.Util;
 import net.imglib2.view.Views;
@@ -182,12 +185,15 @@ public class TileCATMAID
 		p.sourceHeight = Long.parseLong( System.getProperty( "sourceHeight", "0" ) );
 		p.sourceDepth = Long.parseLong( System.getProperty( "sourceDepth", "0" ) );
 		p.sourceScaleLevel = Long.parseLong( System.getProperty( "sourceScaleLevel", "0" ) );
-		final int s = 1 << p.sourceScaleLevel;
+		
+		final int scaleXYDiv = 1 << p.sourceScaleLevel;
 		
 		p.sourceTileWidth = Integer.parseInt( System.getProperty( "sourceTileWidth", "256" ) );
 		p.sourceTileHeight = Integer.parseInt( System.getProperty( "sourceTileHeight", "256" ) );
 		p.sourceResXY = Double.parseDouble( System.getProperty( "sourceResXY", "1.0" ) );
 		p.sourceResZ = Double.parseDouble( System.getProperty( "sourceResZ", "1.0" ) );
+		
+		final double scaleZDiv = scaleXYDiv * p.sourceResXY / p.sourceResZ;
 		
 		/* export */
 		final long minX = Long.parseLong( System.getProperty( "minX", "0" ) );
@@ -197,30 +203,33 @@ public class TileCATMAID
 		final long height = Long.parseLong( System.getProperty( "height", "0" ) );
 		final long depth = Long.parseLong( System.getProperty( "depth", "0" ) );
 		p.sourceInterval = new FinalInterval(
-				new long[]{ minX / s, minY / s, minZ },
-				new long[]{ ( minX + width ) / s - 1, ( minY + height ) / s - 1, minZ + depth - 1 } );
-		final FinalInterval orientedSourceInterval;
+				new long[]{ minX, minY, minZ },
+				new long[]{ minX + width - 1, minY + height - 1, minZ + depth - 1 } );
+		final FinalDimensions orientedSourceInterval;
 		final String orientation = System.getProperty( "orientation", "xy" );
 		if ( orientation.equalsIgnoreCase( "xz" ) )
 		{
 			p.orientation = Orientation.XZ;
-			orientedSourceInterval = new FinalInterval(
-					p.sourceInterval.dimension( 0 ),
-					p.sourceInterval.dimension( 2 ),
-					p.sourceInterval.dimension( 1 ) );
+			orientedSourceInterval = new FinalDimensions(
+					p.sourceInterval.dimension( 0 ) / scaleXYDiv,
+					( long )( p.sourceInterval.dimension( 2 ) / scaleZDiv ),
+					p.sourceInterval.dimension( 1 ) / scaleXYDiv );
 		}
 		else if ( orientation.equalsIgnoreCase( "zy" ) )
 		{
 			p.orientation = Orientation.ZY;
-			orientedSourceInterval = new FinalInterval(
-					p.sourceInterval.dimension( 2 ),
-					p.sourceInterval.dimension( 1 ),
-					p.sourceInterval.dimension( 0 ) );
+			orientedSourceInterval = new FinalDimensions(
+					( long )( p.sourceInterval.dimension( 2 ) / scaleZDiv ),
+					p.sourceInterval.dimension( 1 ) / scaleXYDiv,
+					p.sourceInterval.dimension( 0 ) / scaleXYDiv );
 		}
 		else
 		{
 			p.orientation = Orientation.XY;
-			orientedSourceInterval = new FinalInterval( p.sourceInterval );
+			orientedSourceInterval = new FinalDimensions(
+					p.sourceInterval.dimension( 0 ) / scaleXYDiv,
+					p.sourceInterval.dimension( 1 ) / scaleXYDiv,
+					( long )( p.sourceInterval.dimension( 2 ) / scaleZDiv ) );
 		}
 		
 		p.tileWidth = Integer.parseInt( System.getProperty( "tileWidth", "256" ) );
@@ -269,6 +278,7 @@ public class TileCATMAID
 	 * @param tileWidth
 	 * @param tileHeight
 	 * @param resXY <em>x,y</em>-resolution
+	 * @param real valued offset in CATMAID scale level 0 pixels
 	 * @param resZ <em>z</em>-resolution, what matters is only the ratio
 	 * 		between <em>z</em>- and <em>x,y</em>-resolution to scale the source
 	 * 		to isotropic resolution (if that is desired, you will want to do
@@ -287,6 +297,7 @@ public class TileCATMAID
 			final int tileHeight,
 			final double resXY,
 			final double resZ,
+			final RealLocalizable offset,
 			final Interpolation interpolation )
 	{
 		final CATMAIDRandomAccessibleInterval catmaidStack =
@@ -300,8 +311,18 @@ public class TileCATMAID
 						tileHeight );
 
 		/* scale and re-raster */
-		final double scale = 1.0 / ( 1 << s );
-		final Scale3D scale3d = new Scale3D( 1, 1, resZ / resXY * scale );
+		final double scaleXY = 1.0 / ( 1 << s );
+		final double scaleZ = resZ / resXY * scaleXY;
+		
+		final double offsetX = offset.getDoublePosition( 0 ) * scaleXY;
+		final double offsetY = offset.getDoublePosition( 1 ) * scaleXY;
+		final double offsetZ = offset.getDoublePosition( 2 ) * scaleZ;
+		
+		final AffineTransform3D transform = new AffineTransform3D();
+		transform.set(
+				1, 0, 0, -offsetX,
+				0, 1, 0, -offsetY,
+				0, 0, scaleZ, -offsetZ );
 		final RealRandomAccessible< ARGBType > interpolant;
 		switch ( interpolation )
 		{
@@ -311,14 +332,14 @@ public class TileCATMAID
 		default:
 			interpolant = Views.interpolate( catmaidStack, new NearestNeighborInterpolatorFactory< ARGBType >() );
 		}
-		final RandomAccessible< ARGBType > scaledInterpolant = RealViews.affine( interpolant, scale3d );
+		final RandomAccessible< ARGBType > scaledInterpolant = RealViews.affine( interpolant, transform );
 		final RandomAccessibleInterval< ARGBType > scaled =
 				Views.interval(
 						scaledInterpolant,
 						new FinalInterval(
-								( long )( scale * width ),
-								( long )( scale * height ),
-								( long )( scale * depth * resZ / resXY ) ) );
+								( long )( scaleXY * width - offsetX ),
+								( long )( scaleXY * height - offsetY ),
+								( long )( scaleZ * depth - offsetZ ) ) );
 		
 		return new Tiler( scaled );
 	}
@@ -332,6 +353,17 @@ public class TileCATMAID
 		
 		System.out.println( "sourceInterval: " + Util.printInterval( p.sourceInterval ) );
 		
+		final RealPoint min = new RealPoint( 3 );
+		p.sourceInterval.min( min );
+		
+		final int scaleXYDiv = 1 << p.sourceScaleLevel;
+		final double scaleZDiv = scaleXYDiv * p.sourceResXY / p.sourceResZ;
+		
+		final FinalInterval cropDimensions = new FinalInterval(
+				p.sourceInterval.dimension( 0 ) / scaleXYDiv,
+				p.sourceInterval.dimension( 1 ) / scaleXYDiv,
+				( long )( p.sourceInterval.dimension( 2 ) / scaleZDiv ) );
+		
 		fromCATMAID(
 				p.sourceBaseUrl,
 				p.sourceWidth,
@@ -342,8 +374,9 @@ public class TileCATMAID
 				p.sourceTileHeight,
 				p.sourceResXY,
 				p.sourceResZ,
+				min,
 				p.interpolation ).tile(
-						p.sourceInterval,
+						cropDimensions,
 						p.orientation,
 						p.tileWidth,
 						p.tileHeight,
