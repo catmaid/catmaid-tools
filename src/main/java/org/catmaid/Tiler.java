@@ -118,7 +118,7 @@ public class Tiler
 		if ( yx )
 		{
 			raiSource = Views.permute( sourceTile, 0, 1 );
-			raiTarget = Views.permute( targetTile, 0, 1 );
+			raiTarget = Views.permute( raiTarget, 0, 1 );
 		}
 		else
 			raiSource = sourceTile;
