@@ -56,14 +56,36 @@ import net.imglib2.type.numeric.ARGBType;
 
 /**
  * A read-only {@link RandomAccessibleInterval} of ARGBTypes that generates its
- * pixel values from a CATMAID remote data set.
+ * pixel values from a CATMAID remote data set.  Tiles are addressed, in this
+ * order, by their
+ * 
+ * <ul>
+ * <li>scale level,</li>
+ * <li>scale,</li>
+ * <li>x,</li>
+ * <li>y,</li>
+ * <li>z,</li>
+ * <li>tile width,</li>
+ * <li>tile height,</li>
+ * <li>tile row, and</li>
+ * <li>tile column.</li>
+ * </ul>
+ * <p><code>urlFormat</code> specifies how these parameters are used
+ * to generate a URL referencing the tile. Examples:</p>
+ *
+ * <dl>
+ * <dt>"http://catmaid.org/my-data/xy/%5$d/%8$d_%9$d_%1$d.jpg"</dt>
+ * <dd>CATMAID DefaultTileSource (type 1)</dd>
+ * <dt>"http://catmaid.org/my-data/xy/?x=%3$d&y=%4$d&width=%6d&height=%7$d&row=%8$d&col=%9$d&scale=%2$f&z=%4$d"</dt>
+ * <dd>CATMAID RequestTileSource (type 2)</dd>
+ * <dt>"http://catmaid.org/my-data/xy/%1$d/%5$d/%8$d/%9$d.jpg"</dt>
+ * <dd>CATMAID LargeDataTileSource (type 5)</dd>
+ * </dl>
  * 
  * @author Stephan Saalfeld <saalfeld@mpi-cbg.de>
  */
 public class CATMAIDRandomAccessibleInterval extends AbstractInterval implements RandomAccessibleInterval< ARGBType >
 {
-//	final static protected Toolkit toolkit = Toolkit.getDefaultToolkit();
-	
 	public class Key
 	{
 		final protected long r, c, z;
@@ -570,13 +592,14 @@ public class CATMAIDRandomAccessibleInterval extends AbstractInterval implements
 	}
 	
 	final protected HashMap< Key, SoftReference< Entry > > cache = new HashMap< CATMAIDRandomAccessibleInterval.Key, SoftReference< Entry > >();
-	final protected String baseUrl;
+	final protected String urlFormat;
 	final protected long rows, cols, s;
 	final protected int tileWidth, tileHeight;
+	final protected double scale;
 	
 	
 	public CATMAIDRandomAccessibleInterval(
-			final String url,
+			final String urlFormat,
 			final long width,
 			final long height,
 			final long depth,
@@ -585,11 +608,11 @@ public class CATMAIDRandomAccessibleInterval extends AbstractInterval implements
 			final int tileHeight )
 	{
 		super( 3 );
-		this.baseUrl = url;
+		this.urlFormat = urlFormat;
 		this.tileWidth = tileWidth;
 		this.tileHeight = tileHeight;
 		this.s = s;
-		final double scale = 1.0 / Math.pow( 2, s );
+		scale = 1.0 / (1 << s );
 		cols = ( long )Math.ceil( scale * width / tileWidth );
 		rows = ( long )Math.ceil( scale * height / tileHeight );
 		max[ 0 ] = ( long )( width * scale ) - 1;
@@ -640,9 +663,9 @@ public class CATMAIDRandomAccessibleInterval extends AbstractInterval implements
 				if ( cachedEntry != null )
 					return cachedEntry.data;
 			}
+			
+			final String urlString = String.format( urlFormat, s, scale, c * tileWidth, r * tileHeight, z, tileWidth, tileHeight, r, c );
 
-			final String urlString =
-					new StringBuffer( baseUrl ).append( z ).append( "/" ).append( r ).append( "_" ).append( c ).append( "_" ).append( s ).append( ".jpg" ).toString();
 			final int[] pixels = new int[ tileWidth * tileHeight ];
 			try
 			{

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+INSTALL_PATH="/groups/saalfeld/home/saalfelds/workspace/catmaid-tools"
+IFS="="
+PARAMS=""
+while read -r key value
+do
+        PARAMS="$PARAMS -D$key=$value"
+done < "$1"
+eval "java$PARAMS -jar $INSTALL_PATH/catmaid-scale.jar"

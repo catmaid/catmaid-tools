@@ -12,8 +12,7 @@
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
         <javaElement handleIdentifier="=catmaid-tools/src\/main\/java&lt;org.catmaid{Downsampler.java"/>
+        <javaElement handleIdentifier="=catmaid-tools/src\/main\/java&lt;org.catmaid{Util.java"/>
         <javaElement handleIdentifier="=catmaid-tools/src\/main\/java&lt;org.catmaid{ScaleCATMAID.java"/>
-        <javaElement handleIdentifier="=catmaid-tools/src\/main\/java&lt;org.catmaid{Tiler.java"/>
-        <javaElement handleIdentifier="=imglib2/src\/main\/java"/>
     </selectedElements>
 </jardesc>

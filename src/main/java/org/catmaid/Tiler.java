@@ -16,16 +16,8 @@
  */
 package org.catmaid;
 
-import java.awt.Image;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
-
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.stream.FileImageOutputStream;
 
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
@@ -152,42 +144,6 @@ public class Tiler
 	}
 	
 	
-	final static protected BufferedImage draw(
-			final Image img,
-			final int type )
-	{
-		final BufferedImage imgCopy = new BufferedImage( img.getWidth( null ), img.getHeight( null ), type );
-		imgCopy.createGraphics().drawImage( img, 0, 0, null );
-		return imgCopy;
-	}
-	
-
-	final static protected void writeTile(
-			final BufferedImage img,
-			final String path,
-			final String format,
-			final float quality ) throws IOException
-	{
-		final String tilePath = new StringBuffer( path ).append( "." ).append( format ).toString();
-		new File( tilePath ).getParentFile().mkdirs();
-		final ImageWriter writer = ImageIO.getImageWritersByFormatName( format ).next();
-		final FileImageOutputStream output = new FileImageOutputStream( new File( tilePath ) );
-		writer.setOutput( output );
-		if ( format.equalsIgnoreCase( "jpg" ) )
-		{
-			final ImageWriteParam param = writer.getDefaultWriteParam();
-			param.setCompressionMode( ImageWriteParam.MODE_EXPLICIT );
-			param.setCompressionQuality( quality );
-			writer.write( null, new IIOImage( img.getRaster(), null, null ), param );
-		}
-		else
-			writer.write( img );
-		
-		writer.dispose();
-		output.close();
-	}
-	
-	
 	/**
 	 * Generate a subset of a CATMAID tile stack of an {@link Interval} of the
 	 * source {@link RandomAccessibleInterval}.  That is you can choose the
@@ -277,19 +233,21 @@ public class Tiler
 					final long max0 = Math.min( viewInterval.max( 0 ), min[ 0 ] + tileWidth - 1 );
 					size[ 0 ] = max0 - min[ 0 ] + 1;
 
-					final RandomAccessibleInterval< ARGBType > sourceTile = Views.offsetInterval( view, min, size );
+					final RandomAccessibleInterval< ARGBType > sourceTile = Views.hyperSlice( Views.offsetInterval( view, min, size ), 2, 0 );
 
 					copyTile( sourceTile, tile, orientation == Orientation.ZY, new ARGBType( 0 ) );
 					img.getRaster().setDataElements( 0, 0, tileWidth, tileHeight, tilePixels );
-					final BufferedImage imgCopy = draw( img, type );
+					final BufferedImage imgCopy = Util.draw( img, type );
 					
 					final String tilePath =
 							new StringBuffer( exportPath ).
 							append( "/" ).
 							append( tileName( tilePattern, 0, z, r, c ) ).
+							append( "." ).
+							append( format ).
 							toString();
 					
-					writeTile( imgCopy, tilePath, format, quality );
+					Util.writeTile( imgCopy, tilePath, format, quality );
 //					writePngTile( img, sectionPath + "/" + r + "_" + c + "_0.png" );
 				}
 			}

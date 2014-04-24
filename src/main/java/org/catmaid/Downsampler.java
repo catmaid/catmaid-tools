@@ -16,209 +16,107 @@
  */
 package org.catmaid;
 
-import java.util.ArrayList;
-import java.util.concurrent.Callable;
-
-import net.imglib2.Cursor;
-import net.imglib2.Interval;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.converter.Converter;
-import net.imglib2.converter.TypeIdentity;
-import net.imglib2.img.Img;
-import net.imglib2.img.ImgFactory;
-import net.imglib2.type.numeric.NumericType;
-import net.imglib2.view.SubsampleIntervalView;
-import net.imglib2.view.Views;
-
 /**
  * 
  *
  * @author Stephan Saalfeld <saalfeld@mpi-cbg.de>
  */
-public class Downsampler< T extends NumericType< T >, A extends NumericType< A > > implements Callable< RandomAccessibleInterval< T > >
+final public class Downsampler
 {
-	final protected RandomAccessibleInterval< T > source;
-	final protected RandomAccessibleInterval< T > target;
-	final protected A accumulator, variable;
-	final protected Converter< A, T > at;
-	final protected Converter< T, A > ta;
-	final protected long[] sizeMinusOne;
-	final protected double div;
-	
-	final static protected long[] sizeMinusOne( final Interval source )
+	final static private int averageByte( final int i1, final int i2, final int i3, final int i4, final byte[] data )
 	{
-		final long[] s = new long[ source.numDimensions() ];
-		for ( int d = 0; d < s.length; ++d )
-			s[ d ] = source.dimension( d ) - 1;
-		return s;
+		return (
+				( data[ i1 ] & 0xff ) +
+				( data[ i2 ] & 0xff ) +
+				( data[ i3 ] & 0xff ) +
+				( data[ i4 ] & 0xff ) ) / 4;
 	}
 	
-	final static protected long[] maxMinusOne( final Interval source )
+	final static private int averageColorRed( final int rgb1, final int rgb2, final int rgb3, final int rgb4 )
 	{
-		final long[] s = new long[ source.numDimensions() ];
-		for ( int d = 0; d < s.length; ++d )
-			s[ d ] = source.max( d ) - 1;
-		return s;
+		return (
+			( ( rgb1 >> 16 ) & 0xff ) +
+			( ( rgb2 >> 16 ) & 0xff ) +
+			( ( rgb3 >> 16 ) & 0xff ) +
+			( ( rgb4 >> 16 ) & 0xff ) ) / 4;
 	}
 	
-	final static protected long[] evenSize( final Interval source )
+	final static private int averageColorGreen( final int rgb1, final int rgb2, final int rgb3, final int rgb4 )
 	{
-		final long[] s = new long[ source.numDimensions() ];
-		for ( int d = 0; d < s.length; ++d )
-			s[ d ] = source.dimension( d ) & 0xfffffffffffffffeL;  // / 2
-		return s;
+		return (
+			( ( rgb1 >> 8 ) & 0xff ) +
+			( ( rgb2 >> 8 ) & 0xff ) +
+			( ( rgb3 >> 8 ) & 0xff ) +
+			( ( rgb4 >> 8 ) & 0xff ) ) / 4;
 	}
 	
-	final static protected long[] halfSize( final Interval source )
+	final static private int averageColorBlue( final int rgb1, final int rgb2, final int rgb3, final int rgb4 )
 	{
-		final long[] s = new long[ source.numDimensions() ];
-		for ( int d = 0; d < s.length; ++d )
-			s[ d ] = source.dimension( d ) >> 1;  // / 2
-		return s;
+		return (
+			( rgb1 & 0xff ) +
+			( rgb2 & 0xff ) +
+			( rgb3 & 0xff ) +
+			( rgb4 & 0xff ) ) / 4;
 	}
 	
-	public Downsampler(
-			final RandomAccessibleInterval< T > source,
-			final RandomAccessibleInterval< T > target,
-			final A accumulator,
-			final Converter< A, T > at,
-			final Converter< T, A > ta )
+	final static private int averageColor( final int i1, final int i2, final int i3, final int i4, final int[] data )
 	{
-		this.source = Views.offsetInterval( source, new long[ source.numDimensions() ], evenSize( source ) );
-		this.target = target;
-		this.accumulator = accumulator;
-		variable = accumulator.createVariable();
-		this.at = at;
-		this.ta = ta;
+		final int rgb1 = data[ i1 ];
+		final int rgb2 = data[ i2 ];
+		final int rgb3 = data[ i3 ];
+		final int rgb4 = data[ i4 ];
 		
-		sizeMinusOne = sizeMinusOne( source );
-		div = 1.0 / ( 1L << sizeMinusOne.length );
+		final int red = averageColorRed( rgb1, rgb2, rgb3, rgb4 );
+		final int green = averageColorGreen( rgb1, rgb2, rgb3, rgb4 );
+		final int blue = averageColorBlue( rgb1, rgb2, rgb3, rgb4 );
+		return ( ( ( ( 0xff000000 | red ) << 8 ) | green ) << 8 ) | blue;
 	}
 	
-	public Downsampler(
-			final RandomAccessibleInterval< T > source,
-			final ImgFactory< T > targetFactory,
-			final A accumulator,
-			final Converter< A, T > at,
-			final Converter< T, A > ta )
+	final static public void downsampleBytes( final byte[] aPixels, final byte[] bPixels, final int wa, final int ha )
 	{
-		this(
-				source,
-				targetFactory.create( halfSize( source ), source.randomAccess().get().createVariable() ),
-				accumulator,
-				at,
-				ta );
-	}
-	
-	public Downsampler(
-			final Img< T > source,
-			final A accumulator,
-			final Converter< A, T > at,
-			final Converter< T, A > ta )
-	{
-		this(
-				source,
-				source.factory().create( halfSize( source ), source.randomAccess().get().createVariable() ),
-				accumulator,
-				at,
-				ta );
-	}
-	
-	
-	static public < T extends NumericType< T > > Downsampler< T, T > create(
-			final RandomAccessibleInterval< T > source,
-			final RandomAccessibleInterval< T > target )
-	{
-		final TypeIdentity< T > atta = new TypeIdentity< T >();
-		return new Downsampler< T, T >(
-				source,
-				target,
-				source.randomAccess().get().createVariable(),
-				atta,
-				atta );
-	}
-	
-	
-	static public < T extends NumericType< T > > Downsampler< T, T > create(
-			final RandomAccessibleInterval< T > source,
-			final ImgFactory< T > targetFactory )
-	{
-		final TypeIdentity< T > atta = new TypeIdentity< T >();
-		final T firstElement = source.randomAccess().get();
-		return new Downsampler< T, T >(
-				source,
-				targetFactory.create( halfSize( source ), firstElement.createVariable() ),
-				firstElement.createVariable(),
-				atta,
-				atta );
-	}
-	
-	static public < T extends NumericType< T > > Downsampler< T, T > create(
-			final Img< T > source )
-	{
-		final TypeIdentity< T > atta = new TypeIdentity< T >();
-		final T firstElement = source.randomAccess().get();
-		return new Downsampler< T, T >(
-				source,
-				source.factory().create( halfSize( source ), firstElement.createVariable() ),
-				firstElement.createVariable(),
-				atta,
-				atta );
-	}
-	
-	
-	protected void average( final ArrayList< Cursor< T > > cursors )
-	{
-		final Cursor< T > targetCursor = Views.flatIterable( target ).cursor();
-		while ( targetCursor.hasNext() )
+		assert aPixels.length == wa * ha && bPixels.length == wa / 2 * ( ha / 2 ) : "Input dimensions do not match.";
+		
+		final int wa2 = wa + wa;
+		
+		final int wb = wa / 2;
+		final int hb = ha / 2;
+		final int nb = hb * wb;
+		
+		for ( int ya = 0, yb = 0; yb < nb; ya += wa2, yb += wb )
 		{
-			accumulator.setZero();
-			for ( final Cursor< T > c : cursors )
+			final int ya1 = ya + wa;
+			for ( int xa = 0, xb = 0; xb < wb; xa += 2, ++xb )
 			{
-				ta.convert( c.next(), variable );
-				accumulator.add( variable );
-			}
-			accumulator.mul( div );
-			at.convert( accumulator, targetCursor.next() );
-		}
-	}
-	
-	
-	public RandomAccessibleInterval< T > call() throws Exception
-	{
-		final long[] min = new long[ sizeMinusOne.length ];
-		final long[] max = new long[ sizeMinusOne.length ];
-		final ArrayList< RandomAccessibleInterval< T > > views = new ArrayList< RandomAccessibleInterval< T > >( 1 << sizeMinusOne.length );
-		final ArrayList< Cursor< T > > cursors = new ArrayList< Cursor< T > >( views.size() );
-		
-		views.add( Views.interval( source, min, sizeMinusOne ) );
-		
-		/* shift */
-		for ( int d = 0; d < sizeMinusOne.length; ++d )
-		{
-			final int l = views.size();
-			for ( int e = 0; e < l; ++e )
-			{
-				final RandomAccessibleInterval< T > view = views.get( e ); 
-				view.min( min );
-				view.max( max );
-				min[ d ] = 1;
-				max[ d ] += 1;
-				views.add( Views.interval( source, min, max ) );
+				final int xa1 = xa + 1;
+				final int s = averageByte(
+						ya + xa,
+						ya + xa1,
+						ya1 + xa,
+						ya1 + xa1,
+						aPixels );
+				bPixels[ yb + xb ] = ( byte )s;
 			}
 		}
+	}
+	
+	final static public void downsampleRGB( final int[] aPixels, final int[] bPixels, final int wa, final int ha )
+	{
+		assert aPixels.length == wa * ha && bPixels.length == wa / 2 * ( ha / 2 ) : "Input dimensions do not match.";
 		
-		/* downsample and cursors */
-		for ( int d = 0; d < views.size(); ++d )
+		final int wa2 = wa + wa;
+		
+		final int wb = wa / 2;
+		final int hb = ha / 2;
+		final int nb = hb * wb;
+		
+		for ( int ya = 0, yb = 0; yb < nb; ya += wa2, yb += wb )
 		{
-			final SubsampleIntervalView< T > v = Views.subsample( views.get( d ), 2 );
-			views.set( d, v );
-			cursors.add(  Views.flatIterable( v ).cursor() );
+			final int ya1 = ya + wa;
+			for ( int xa = 0, xb = 0; xb < wb; xa += 2, ++xb )
+			{
+				final int xa1 = xa + 1;
+				bPixels[ yb + xb ] = averageColor( ya + xa, ya + xa1, ya1 + xa, ya1 + xa1, aPixels );
+			}
 		}
-		
-		/* average */
-		average( cursors );
-		
-		return target;
 	}
 }

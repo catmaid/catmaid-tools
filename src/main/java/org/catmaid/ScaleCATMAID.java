@@ -25,18 +25,6 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import net.imglib2.FinalInterval;
-import net.imglib2.Interval;
-import net.imglib2.converter.ARGBARGBDoubleConverter;
-import net.imglib2.converter.ARGBDoubleARGBConverter;
-import net.imglib2.img.array.ArrayImg;
-import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.basictypeaccess.array.IntArray;
-import net.imglib2.type.numeric.ARGBDoubleType;
-import net.imglib2.type.numeric.ARGBType;
-
-import org.catmaid.Tiler.Orientation;
-
 /**
  * <p>A standalone command line application to generate the scale pyramid of an
  * existing scale level 0 tile set for the CATMAID interface.</p>
@@ -88,20 +76,17 @@ import org.catmaid.Tiler.Orientation;
  * <p>Parameters are passed as properties to the JVM virtual machine, e.g.
  * <code>./java -jar ScaleCATMAID.jar</code></p>
  * 
- * @author Stephan Saalfeld <saalfeld@mpi-cbg.de>
+ * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
  */
 public class ScaleCATMAID
 {
 	static protected class Param
 	{
-		public Interval sourceInterval;
-		public Orientation orientation;
 		public int tileWidth;
 		public int tileHeight;
 		public long minZ;
 		public long maxZ;
-		public String basePath;
-		public String tilePattern;
+		public String tileFormat;
 		public String format;
 		public float quality;
 		public int type;
@@ -112,23 +97,16 @@ public class ScaleCATMAID
 	static protected Param parseParameters()
 	{
 		final Param p = new Param();
-		final long width = Long.parseLong( System.getProperty( "width", "0" ) );
-		final long height = Long.parseLong( System.getProperty( "height", "0" ) );
-		final long depth = Long.parseLong( System.getProperty( "depth", "0" ) );
-		p.sourceInterval = new FinalInterval( width, height, depth );
-		final String orientation = System.getProperty( "orientation", "xy" );
-		if ( orientation.equalsIgnoreCase( "xz" ) )
-			p.orientation = Orientation.XZ;
-		else if ( orientation.equalsIgnoreCase( "zy" ) )
-			p.orientation = Orientation.ZY;
-		else
-			p.orientation = Orientation.XY;
 		p.tileWidth = Integer.parseInt( System.getProperty( "tileWidth", "256" ) );
 		p.tileHeight = Integer.parseInt( System.getProperty( "tileHeight", "256" ) );
+		
 		p.minZ = Long.parseLong( System.getProperty( "minZ", "0" ) );
-		p.maxZ = Long.parseLong( System.getProperty( "maxZ", Long.toString( depth - 1 ) ) );
-		p.basePath = System.getProperty( "basePath", "" );
-		p.tilePattern = System.getProperty( "tilePattern", "<z>/<r>_<c>_<s>" );
+		p.maxZ = Long.parseLong( System.getProperty( "maxZ", "" + Long.MAX_VALUE ) );
+		final String basePath = System.getProperty( "basePath", "" );
+		p.tileFormat = System.getProperty( "tileFormat", basePath + "%5$d/%8$d_%9$d_%1$d.jpg" );
+		
+		System.out.println( p.tileFormat );
+		
 		p.format = System.getProperty( "format", "jpg" );
 		p.quality = Float.parseFloat( System.getProperty( "quality", "0.85" ) );
 		final String type = System.getProperty( "type", "rgb" );
@@ -145,11 +123,10 @@ public class ScaleCATMAID
 			final BufferedImage alternative,
 			final int type )
 	{
-		System.out.println( path );
+//		System.out.println( path );
 		final File file = new File( path );
 		if ( file.exists() )
 		{
-//			final Image tImg = toolkit.createImage( path );
 			try
 			{
 				return ImageIO.read( new File( path ) );
@@ -168,19 +145,11 @@ public class ScaleCATMAID
 	 * Generate scaled tiles from a range of an existing scale level 0 tile
 	 * stack.
 	 * 
-	 * @param sourceInterval the dimensions of the level 0 tile stack in
-	 * 		original x,y,z orientation 
-	 * @param orientation the orientation of the level 0 tile stack, required
-	 * 		to transpose sourceInterval accordingly
+	 * @param tileFormat format string adfdressing tiles including basePath
 	 * @param tileWidth
 	 * @param tileHeight
 	 * @param minZ the first z-index to be scaled 
 	 * @param maxZ the last z-index to be scaled
-	 * @param basePath base path of the source, this is also where the scaled
-	 * 		tiles will be exported
-	 * @param tilePattern the file name convention for tile coordinates without
-	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 		"&lt;r&gt;", "&lt;c&gt;".
 	 * @param format file format, e.g. "jpg" or "png"
 	 * @param quality quality for jpg-compression if format is "jpg"
 	 * @param type the type of export tiles, e.g.
@@ -189,14 +158,11 @@ public class ScaleCATMAID
 	 * @throws Exception
 	 */
 	final public static void scale(
-			final Interval sourceInterval,
-			final Tiler.Orientation orientation,
+			final String tileFormat,
 			final int tileWidth,
 			final int tileHeight,
 			final long minZ,
 			final long maxZ,
-			final String basePath,
-			final String tilePattern,
 			final String format,
 			final float quality,
 			final int type ) throws Exception
@@ -204,93 +170,66 @@ public class ScaleCATMAID
 		final BufferedImage alternative = new BufferedImage( tileWidth, tileHeight, BufferedImage.TYPE_INT_RGB );
 		
 		final int[] targetPixels = new int[ tileWidth * tileHeight ];
-		final ArrayImg< ARGBType, IntArray > targetTile = ArrayImgs.argbs( targetPixels, tileWidth, tileHeight );
 		final BufferedImage target = new BufferedImage( tileWidth, tileHeight, BufferedImage.TYPE_INT_RGB );
 		
 		final BufferedImage sourceImage = new BufferedImage( tileWidth * 2, tileHeight * 2, BufferedImage.TYPE_INT_RGB );
 		final Graphics2D g = sourceImage.createGraphics();
 		final int[] sourcePixels = new int[ tileWidth * tileHeight * 4 ];
-		final ArrayImg< ARGBType, IntArray > sourceTile = ArrayImgs.argbs( sourcePixels, tileWidth * 2, tileHeight * 2 );
-
-		final Downsampler< ARGBType, ARGBDoubleType > downsampler =
-				new Downsampler< ARGBType, ARGBDoubleType >(
-						sourceTile,
-						targetTile,
-						new ARGBDoubleType(),
-						new ARGBDoubleARGBConverter< ARGBDoubleType >(),
-						new ARGBARGBDoubleConverter< ARGBDoubleType >() );
 				
-		/* orientation */
-		final Interval viewInterval;
-		switch ( orientation )
+Z:		for ( long z = minZ; z <= maxZ; ++z )
 		{
-		case XZ:
-			viewInterval = new FinalInterval(
-					new long[]{ sourceInterval.min( 0 ), sourceInterval.min( 2 ), sourceInterval.min( 1 ) },
-					new long[]{ sourceInterval.max( 0 ), sourceInterval.max( 2 ), sourceInterval.max( 1 ) } );
-			break;
-		case ZY:
-			viewInterval = new FinalInterval(
-					new long[]{ sourceInterval.min( 2 ), sourceInterval.min( 1 ), sourceInterval.min( 0 ) },
-					new long[]{ sourceInterval.max( 2 ), sourceInterval.max( 1 ), sourceInterval.max( 0 ) } );
-			break;
-		default:
-			viewInterval = sourceInterval;
-		}
-		
-		/* scale */
-		for ( long l = minZ; l <= maxZ; ++l )
-		{
-			System.out.println( "z-index: " +  l );
-			for (
-				long w1 = ( long )Math.ceil( viewInterval.dimension( 0 ) * 0.5 ),
-				h1 = ( long )Math.ceil( viewInterval.dimension( 1 ) * 0.5 ),
-				s = 1;
-				w1 > tileWidth && h1 > tileHeight;
-				w1 = ( long )Math.ceil( w1 * 0.5 ),
-				h1 = ( long )Math.ceil( h1 * 0.5 ),
-				++s )
+			System.out.println( "z-index: " +  z );
+S:			for ( int s = 1; true; ++s )
 			{
-				for ( long y = 0; y < h1; y += tileHeight )
+				System.out.println( "  scale: " +  s );
+				final int iScale = 1 << s;
+				final double scale = 1.0 / iScale;
+				
+				final int s1 = s - 1;
+				final int iScale1 = 1 << s1;
+				final double scale1 = 1.0 / iScale1;
+				
+				boolean proceedY = true;
+Y:				for ( long y = 0; proceedY; y += tileHeight )
 				{
 					final long yt = y / tileHeight;
-					for ( long x = 0; x < w1; x += tileWidth )
+					boolean proceedX = true;
+					for ( long x = 0; proceedX; x += tileWidth )
 					{
 						final long xt = x / tileWidth;
 						final Image imp1 = open(
-								new StringBuffer( basePath ).
-									append( "/" ).
-									append( Tiler.tileName( tilePattern, s - 1, l, 2 * yt, 2 * xt ) ).
-									append( "." ).
-									append( format ).
-									toString(),
+								String.format( tileFormat, s1, scale1, x * iScale1, y * iScale1, z, tileWidth * iScale1, tileHeight * iScale1, 2 * yt, 2 * xt ),
 								alternative,
 								type );
+
+						if ( imp1 == alternative )
+							if ( x == 0 )
+								if ( y == 0 )
+									break Z;
+								else
+									continue S;
+							else
+								continue Y;
+						
 						final Image imp2 = open(
-								new StringBuffer( basePath ).
-									append( "/" ).
-									append( Tiler.tileName( tilePattern, s - 1, l, 2 * yt, 2 * xt + 1 ) ).
-									append( "." ).
-									append( format ).
-									toString(),
+								String.format( tileFormat, s1, scale1, ( x + tileWidth ) * iScale1, y * iScale1, z, tileWidth * iScale1, tileHeight * iScale1, 2 * yt, 2 * xt + 1 ),
 								alternative,
 								type );
+						
+						proceedX = imp2 != alternative;
+						
 						final Image imp3 = open(
-								new StringBuffer( basePath ).
-									append( "/" ).
-									append( Tiler.tileName( tilePattern, s - 1, l, 2 * yt + 1, 2 * xt ) ).
-									append( "." ).
-									append( format ).
-									toString(),
+								String.format( tileFormat, s1, scale1, x * iScale1, ( y + tileHeight ) * iScale1, z, tileWidth * iScale1, tileHeight * iScale1, 2 * yt + 1, 2 * xt ),
 								alternative,
 								type );
+						
+						proceedY = imp3 != alternative;
+						
+						if ( x == 0 && y == 0 && !( proceedX || proceedY) )
+							break S;
+						
 						final Image imp4 = open(
-								new StringBuffer( basePath ).
-									append( "/" ).
-									append( Tiler.tileName( tilePattern, s - 1, l, 2 * yt + 1, 2 * xt + 1 ) ).
-									append( "." ).
-									append( format ).
-									toString(),
+								String.format( tileFormat, s1, scale1, ( x + tileWidth ) * iScale1, ( y + tileHeight ) * iScale1, z, tileWidth * iScale1, tileHeight * iScale1, 2 * yt + 1, 2 * xt + 1 ),
 								alternative,
 								type );
 						
@@ -302,17 +241,14 @@ public class ScaleCATMAID
 						final PixelGrabber pg = new PixelGrabber( sourceImage, 0, 0, tileWidth * 2, tileHeight * 2, sourcePixels, 0, tileWidth * 2 );
 						pg.grabPixels();
 						
-						downsampler.call();
+						Downsampler.downsampleRGB( sourcePixels, targetPixels, tileWidth * 2, tileHeight * 2 );
 						
 						target.getRaster().setDataElements( 0, 0, tileWidth, tileHeight, targetPixels );
-						final BufferedImage targetCopy = Tiler.draw( target, type );
+						final BufferedImage targetCopy = Util.draw( target, type );
 
-						Tiler.writeTile(
+						Util.writeTile(
 								targetCopy,
-								new StringBuffer( basePath ).
-								append( "/" ).
-								append( Tiler.tileName( tilePattern, s, l, yt, xt ) ).
-								toString(),
+								String.format( tileFormat, s, scale, x * iScale, y * iScale, z, tileWidth * iScale, tileHeight * iScale, yt, xt ),
 								format,
 								quality );
 					}
@@ -321,66 +257,14 @@ public class ScaleCATMAID
 		}
 	}
 	
-	
-	
-	/**
-	 * Generate scaled tiles from an existing scale level 0 tile stack.
-	 * 
-	 * @param sourceInterval the dimensions of the level 0 tile stack in
-	 * 		original x,y,z orientation 
-	 * @param orientation the orientation of the level 0 tile stack, required
-	 * 		to transpose sourceInterval accordingly
-	 * @param tileWidth
-	 * @param tileHeight
-	 * @param basePath base path of the source, this is also where the scaled
-	 * 		tiles will be exported
-	 * @param tilePattern the file name convention for tile coordinates without
-	 * 		extension and base path, must contain "&lt;s&gt;","&lt;z&gt;",
-	 * 		"&lt;r&gt;", "&lt;c&gt;".
-	 * @param format file format, e.g. "jpg" or "png"
-	 * @param quality quality for jpg-compression if format is "jpg"
-	 * @param type the type of export tiles, e.g.
-	 * 		{@link BufferedImage#TYPE_BYTE_GRAY}
-	 * 
-	 * @throws Exception
-	 */
-	final public static void scale(
-			final Interval sourceInterval,
-			final Tiler.Orientation orientation,
-			final int tileWidth,
-			final int tileHeight,
-			final String basePath,
-			final String tilePattern,
-			final String format,
-			final float quality,
-			final int type ) throws Exception
-	{
-		scale(
-				sourceInterval,
-				orientation,
-				tileWidth,
-				tileHeight,
-				sourceInterval.min( 2 ),
-				sourceInterval.max( 2 ),
-				basePath,
-				tilePattern,
-				format,
-				quality,
-				type );
-	}
-	
-	
 	final static public void scale( final Param p ) throws Exception
 	{
 		scale(
-				p.sourceInterval,
-				p.orientation,
+				p.tileFormat,
 				p.tileWidth,
 				p.tileHeight,
 				p.minZ,
 				p.maxZ,
-				p.basePath,
-				p.tilePattern,
 				p.format,
 				p.quality,
 				p.type );

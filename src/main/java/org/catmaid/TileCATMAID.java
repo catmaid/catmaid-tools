@@ -60,7 +60,9 @@ import org.catmaid.Tiler.Orientation;
  * parantheses:</p>
  * <dl>
  * <dt>sourceBaseUrl</dt>
- * <dd>base path of the source CATMAID stack (string, "")</dd>
+ * <dd>base path of the source CATMAID stack (string, ""), not required if <code>sourceUrlFormat</code> includes it</dd>
+ * <dt>sourceUrlFormat</dt>
+ * <dd>URL format String to address CATMAID tiles(string, sourceBaseUrl + "%5$d/%8$d_%9$d_%1$d.jpg")</dd>
  * <dt>sourceWidth</dt>
  * <dd>width of the source in scale level 0 pixels in <em>xyz</em> orientation
  * (long, 0)</dd>
@@ -145,7 +147,7 @@ public class TileCATMAID
 	static protected class Param
 	{
 		/* CATMAID source stack, representing an xyz-orientation */
-		public String sourceBaseUrl;
+		public String sourceUrlFormat;
 		public long sourceWidth;
 		public long sourceHeight;
 		public long sourceDepth;
@@ -180,7 +182,9 @@ public class TileCATMAID
 		final Param p = new Param();
 		
 		/* CATMAID source stack */
-		p.sourceBaseUrl = System.getProperty( "sourceBaseUrl", "" );
+		final String sourceBaseUrl = System.getProperty( "sourceBaseUrl", "" );
+		p.sourceUrlFormat = System.getProperty( "sourceUrlFormat", sourceBaseUrl + "%5$d/%8$d_%9$d_%1$d.jpg" );
+		
 		p.sourceWidth = Long.parseLong( System.getProperty( "sourceWidth", "0" ) );
 		p.sourceHeight = Long.parseLong( System.getProperty( "sourceHeight", "0" ) );
 		p.sourceDepth = Long.parseLong( System.getProperty( "sourceDepth", "0" ) );
@@ -269,7 +273,7 @@ public class TileCATMAID
 	/**
 	 * Create a {@link Tiler} from a CATMAID stack.
 	 * 
-	 * @param baseUrl
+	 * @param urlFormat
 	 * @param width	of scale level 0 in pixels
 	 * @param height of scale level 0 in pixels
 	 * @param depth	of scale level 0 in pixels
@@ -288,7 +292,7 @@ public class TileCATMAID
 	 * @return
 	 */
 	static public Tiler fromCATMAID(
-			final String baseUrl,
+			final String urlFormat,
 			final long width,
 			final long height,
 			final long depth,
@@ -302,7 +306,7 @@ public class TileCATMAID
 	{
 		final CATMAIDRandomAccessibleInterval catmaidStack =
 				new CATMAIDRandomAccessibleInterval(
-						baseUrl,
+						urlFormat,
 						width,
 						height,
 						depth,
@@ -365,7 +369,7 @@ public class TileCATMAID
 				( long )( p.sourceInterval.dimension( 2 ) / scaleZDiv ) );
 		
 		fromCATMAID(
-				p.sourceBaseUrl,
+				p.sourceUrlFormat,
 				p.sourceWidth,
 				p.sourceHeight,
 				p.sourceDepth,
