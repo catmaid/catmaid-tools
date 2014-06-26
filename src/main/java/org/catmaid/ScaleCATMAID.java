@@ -39,18 +39,6 @@ import javax.imageio.ImageIO;
  * <p>The program accepts the following parameters, type and default in
  * parantheses:</p>
  * <dl>
- * <dt>width</dt>
- * <dd>width of the source in scale level 0 pixels in <em>xyz</em> orientation
- * (long, 0)</dd>
- * <dt>height</dt>
- * <dd>height of the source in scale level 0 pixels in <em>xyz</em> orientation
- * (long, 0)</dd>
- * <dt>depth</dt>
- * <dd>depth of the source in scale level 0 pixels in <em>xyz</em> orientation
- * (long, 0)</dd>
- * <dt>orientation</dt>
- * <dd>orientation of the source, is used to permute width, height, depth
- * accordingly, possible values "xy", "xz", "zy" (string, "xy")</dd>
  * <dt>tileWidth</dt>
  * <dd>width of image tiles in pixels (int, 256)</dd>
  * <dt>tileHeight</dt>
@@ -58,7 +46,7 @@ import javax.imageio.ImageIO;
  * <dt>minZ</dt>
  * <dd>first <em>z</em>-section index (long, 0)</dd>
  * <dt>maxZ</dt>
- * <dd>last <em>z</em>-section index (long, depth-1)</dd>
+ * <dd>last <em>z</em>-section index (long, Long.MAX_VALUE)</dd>
  * <dt>basePath</dt>
  * <dd>base path to the scale level 0 tile set, that's where scaled tiles will
  * be exported too (string, "")</dd>
