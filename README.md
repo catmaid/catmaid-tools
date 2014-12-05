@@ -31,7 +31,32 @@ the following parameters, type and default in parantheses:
 <dt>sourceBaseUrl</dt>
 <dd>base path of the source CATMAID stack (string, ""), not required if <code>sourceUrlFormat</code> includes it</dd>
 <dt>sourceUrlFormat</dt>
-<dd>URL format String to address CATMAID tiles(string, sourceBaseUrl + "%5$d/%8$d_%9$d_%1$d.jpg")</dd>
+<dd>URL format String to address CATMAID tiles(string, sourceBaseUrl + "%5$d/%8$d_%9$d_%1$d.jpg").</dd>
+</dl>
+
+> Tiles are addressed, in this order, by their
+
+> 1. scale_level,
+> 1. scale,
+> 1. x,
+> 1. y,
+> 1. z,
+> 1. tile width,
+> 1. tile height,
+> 1. tile row, and
+> 1. tile column.
+
+> Examples:
+> <dl>
+> <dt>"http://catmaid.org/my-data/xy/%5$d/%8$d_%9$d_%1$d.jpg"</dt>
+>  <dd>CATMAID DefaultTileSource (type 1)</dd>
+>  <dt>"http://catmaid.org/my-data/xy/?x=%3$d&y=%4$d&width=%6d&height=%7$d&row=%8$d&col=%9$d&scale=%2$f&z=%4$d"</dt>
+>  <dd>CATMAID RequestTileSource (type 2)</dd>
+>  <dt>"http://catmaid.org/my-data/xy/%1$d/%5$d/%8$d/%9$d.jpg"</dt>
+>  <dd>CATMAID LargeDataTileSource (type 5)</dd>
+> </dl>
+
+<dl>
 <dt>sourceWidth</dt>
 <dd>width of the source in scale level 0 pixels in <em>xyz</em> orientation
 (long, 0)</dd>
