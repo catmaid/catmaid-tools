@@ -1,6 +1,6 @@
-#catmaid-tools
+# catmaid-tools
 
-##TileCATMAID
+## TileCATMAID
 
 A standalone command line application to export image tiles representing
 scale level 0 of the tiled scale pyramids for the CATMAID interface from
@@ -136,7 +136,7 @@ Alternatively, it can be executed by the accompanying Bash-script **retile**
 that is called with a config file as its single parameter.  The config file
 contains all parameters in key=value rows (escaped according to Bash's needs).
 
-###Examples:
+### Examples:
 
     sourceUrlFormat='http://catmaid.org/stack/%5$d/%8$d_%9$d_%1$d.jpg'
     sourceWidth=22775
