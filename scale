@@ -7,4 +7,4 @@ while read -r key value
 do
         PARAMS="$PARAMS -D$key=$value"
 done < "$1"
-eval "java$PARAMS -jar $INSTALL_PATH/catmaid-scale.jar"
+eval "java$PARAMS ${@:2} -jar $INSTALL_PATH/catmaid-scale.jar"
