@@ -1,5 +1,10 @@
 # catmaid-tools
 
+- [TileCATMAID](#tilecatmaid) Export scale level 0 tiled subvolumes from an
+  existing stack.
+- [ScaleCATMAID](#scalecatmaid) Create tiled scale pyramid from existing scale
+  level 0 tiles.
+
 ## TileCATMAID
 
 A standalone command line application to export image tiles representing
@@ -22,7 +27,7 @@ parallelized by *z*-slice but not within a *z*-slice.
 The TileCATMAID main program comes in the fat jar catmaid-tile.jar that can
 be generated with Eclipse using catmaid-tile.jardesc.  It is executed by:
 
-    ./java -jar ScaleCATMAID.jar -DsourceBaseUrl=http://...
+    ./java -jar catmaid-tile.jar -DsourceBaseUrl=http://...
 
 passing parameters as properties to the JVM virtual machine.  It accepts
 the following parameters, type and default in parantheses:
@@ -160,3 +165,77 @@ contains all parameters in key=value rows (escaped according to Bash's needs).
     quality=0.85
     type=gray
     interpolation=NL
+
+
+## ScaleCATMAID
+
+A standalone command line application to create a tiled scale pyramid from
+an existing scale level 0 tiled CATMAID image stack. The size of the existing
+stack is determined by the existence of tile files.
+
+The ScaleCATMAID main program comes in the fat jar catmaid-scale.jar that can
+be generated with Eclipse using catmaid-scale.jardesc.  It is executed by:
+
+    ./java -jar catmaid-scale.jar -DminZ=...
+
+passing parameters as properties to the JVM virtual machine.  It accepts
+the following parameters, type and default in parantheses:
+
+<dl>
+<dt>basePath</dt>
+<dd>base path of the source CATMAID stack (string, "")</dd>
+<dt>tileFormat</dt>
+<dd>path format String to address CATMAID tiles, overrides <code>basePath</code> if provided (string, basePath + "%5$d/%8$d_%9$d_%1$d.jpg").</dd>
+</dl>
+
+> Tiles are addressed, in this order, by their
+
+> 1. scale level,
+> 1. scale,
+> 1. x,
+> 1. y,
+> 1. z,
+> 1. tile width,
+> 1. tile height,
+> 1. tile row, and
+> 1. tile column.
+
+> Examples:
+> <dl>
+>  <dt>"/my-data/xy/%5$d/%8$d_%9$d_%1$d.jpg"</dt>
+>  <dd>CATMAID DefaultTileSource (type 1)</dd>
+>  <dt>"/my-data/xy/%1$d/%5$d/%8$d/%9$d.jpg"</dt>
+>  <dd>CATMAID LargeDataTileSource (type 5)</dd>
+> </dl>
+
+<dl>
+<dt>tileWidth</dt>
+<dd>width of image tiles in pixels (int, 256)</dd>
+<dt>tileHeight</dt>
+<dd>height of image tiles in pixels (int, 256)</dd>
+<dt>minZ</dt>
+<dd>first <em>z</em>-section index to be exported (long, 0)</dd>
+<dt>maxZ</dt>
+<dd>last <em>z</em>-section index to be exported (long, long max)</dd>
+<dt>format</dt>
+<dd>image tile file format for export, e.g. "jpg" or "png" (string,
+"jpg")</dd>
+<dt>quality</dt>
+<dd>quality for export jpg-compression if format is "jpg" (float, 0.85)</dd>
+<dt>type</dt>
+<dd>the type of export tiles, either "rgb" or "gray" (string, "rgb")</dd>
+</dl>
+
+Alternatively, it can be executed by the accompanying Bash-script **scale**
+that is called with a config file as its single parameter.  The config file
+contains all parameters in key=value rows (escaped according to Bash's needs).
+
+### Examples:
+
+    tileWidth=256
+    tileHeight=256
+    minZ=0
+    tileFormat='/home/me/catmaid/test/xz/%5$d/%8$d_%9$d_%1$d.jpg'
+    format=jpg
+    quality=0.85
+    type=gray
