@@ -49,11 +49,10 @@ import javax.imageio.ImageIO;
  * <dd>last <em>z</em>-section index (long, Long.MAX_VALUE)</dd>
  * <dt>basePath</dt>
  * <dd>base path to the scale level 0 tile set, that's where scaled tiles will
- * be exported too (string, "")</dd>
- * <dt>tilePattern</dt>
- * <dd>tilePattern the file name convention for tile coordinates without
- * extension and base path, must contain "&lt;s&gt;","&lt;z&gt;", "&lt;r&gt;",
- * "&lt;c&gt;" (string, "&lt;z&gt;/&lt;r&gt;_&lt;c&gt;_&lt;s&gt;")
+ * be exported to (string, "")</dd>
+ * <dt>tileFormat</dt>
+ * <dd>file name for tiles including extension and base path (string,
+ * basePath + "%5$d/%8$d_%9$d_%1$d.jpg")</dd>
  * <dt>format</dt>
  * <dd>image tile file format, e.g. "jpg" or "png" (string, "jpg")</dd>
  * <dt>quality</dt>
