@@ -1,6 +1,6 @@
 #!/bin/bash
 
-INSTALL_PATH="/groups/saalfeld/home/saalfelds/workspace/catmaid-tools"
+INSTALL_PATH="$(dirname "${BASH_SOURCE[0]}")/target"
 IFS="="
 PARAMS=""
 while read -r key value

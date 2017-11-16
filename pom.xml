@@ -55,7 +55,8 @@
                               <mainClass>org.catmaid.ScaleCATMAID</mainClass>
                           </manifest>
                       </archive>
-                      <finalName>ScaleCATMAID</finalName>
+                      <finalName>catmaid-scale</finalName>
+                      <appendAssemblyId>false</appendAssemblyId>
                   </configuration>
                   <id>build-ScaleCATMAIDs</id>
                   <phase>package</phase>
@@ -70,7 +71,8 @@
                               <mainClass>org.catmaid.TileCATMAID</mainClass>
                           </manifest>
                       </archive>
-                      <finalName>TileCATMAID</finalName>
+                      <finalName>catmaid-tile</finalName>
+                      <appendAssemblyId>false</appendAssemblyId>
                   </configuration>
                   <id>build-TileCATMAID</id>
                   <phase>package</phase>
